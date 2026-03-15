@@ -6,7 +6,8 @@ let currentCard = null;
 let gpsData = { lat: null, lng: null };
 let cameraStream = null;
 let tesseractLoaded = false;
-let lastCapturedDataURL = null;
+let lastCapturedBlob = null;   // 사진 저장용 Blob
+let previewObjectURL  = null;  // 미리보기 ObjectURL (메모리 해제용)
 
 // ── 화면 전환 ─────────────────────────────────────────────────────────────────
 function showScreen(id) {
@@ -62,60 +63,44 @@ function stopCamera() {
   }
 }
 
-function captureFrame() {
-  const video = document.getElementById('camera-video');
-  const canvas = document.getElementById('camera-canvas');
-  canvas.width = video.videoWidth;
-  canvas.height = video.videoHeight;
-  canvas.getContext('2d').drawImage(video, 0, 0);
-  const dataURL = canvas.toDataURL('image/jpeg', 0.92);
-  lastCapturedDataURL = dataURL;
-  return dataURL;
-}
-
 // ── 사진 미리보기 표시 ────────────────────────────────────────────────────────
-function showPhotoPreview(src) {
-  const wrap = document.getElementById('photo-preview');
-  const img  = document.getElementById('photo-preview-img');
-  img.src = src;
-  wrap.style.display = 'block';
+function showPhotoPreview(blob) {
+  if (previewObjectURL) URL.revokeObjectURL(previewObjectURL);
+  previewObjectURL = URL.createObjectURL(blob);
+  document.getElementById('photo-preview-img').src = previewObjectURL;
+  document.getElementById('photo-preview').style.display = 'block';
 }
 
 function hidePhotoPreview() {
-  const wrap = document.getElementById('photo-preview');
-  wrap.style.display = 'none';
+  document.getElementById('photo-preview').style.display = 'none';
   document.getElementById('photo-preview-img').src = '';
-  lastCapturedDataURL = null;
+  if (previewObjectURL) { URL.revokeObjectURL(previewObjectURL); previewObjectURL = null; }
+  lastCapturedBlob = null;
 }
 
 // ── 사진 저장 (iOS 사진첩) ────────────────────────────────────────────────────
+// ※ Blob을 미리 저장해두어 Web Share API 호출 시 async fetch 없이 즉시 실행
 async function savePhotoToGallery() {
-  if (!lastCapturedDataURL) { showToast('저장할 사진이 없습니다'); return; }
+  if (!lastCapturedBlob) { showToast('저장할 사진이 없습니다'); return; }
+
+  const filename = `명함_${new Date().toISOString().slice(0, 10)}.jpg`;
+  const file = new File([lastCapturedBlob], filename, { type: 'image/jpeg' });
 
   try {
-    // dataURL → Blob → File
-    const res  = await fetch(lastCapturedDataURL);
-    const blob = await res.blob();
-    const filename = `명함_${new Date().toISOString().slice(0,10)}_${Date.now()}.jpg`;
-    const file = new File([blob], filename, { type: 'image/jpeg' });
-
-    // Web Share API (iOS Safari 지원) — 사진첩 저장 가능
     if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      // iOS Safari: 공유 메뉴 → "이미지 저장" 선택
       await navigator.share({ files: [file], title: '명함 사진' });
-      showToast('공유 메뉴에서 "이미지 저장"을 선택해주세요 📷');
     } else {
-      // 폴백: 다운로드 링크 (Android / 데스크탑)
-      const url = URL.createObjectURL(blob);
+      // Android / 데스크탑 폴백: 파일 다운로드
+      const url = URL.createObjectURL(lastCapturedBlob);
       const a   = document.createElement('a');
-      a.href = url;
-      a.download = filename;
-      a.click();
+      a.href = url; a.download = filename; a.click();
       URL.revokeObjectURL(url);
-      showToast('사진 저장 완료 ✓');
+      showToast('사진 다운로드 완료 ✓');
     }
   } catch (e) {
     if (e.name !== 'AbortError') {
-      showToast('사진 저장 실패. 미리보기를 길게 눌러 저장해보세요');
+      showToast('미리보기 이미지를 길게 눌러 저장하세요');
     }
   }
 }
@@ -561,15 +546,25 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // 촬영
-  document.getElementById('btn-capture').addEventListener('click', async () => {
-    const img = captureFrame();
+  // 촬영 — canvas.toBlob()으로 Blob 직접 획득
+  document.getElementById('btn-capture').addEventListener('click', () => {
+    const video  = document.getElementById('camera-video');
+    const canvas = document.getElementById('camera-canvas');
+    canvas.width  = video.videoWidth;
+    canvas.height = video.videoHeight;
+    canvas.getContext('2d').drawImage(video, 0, 0);
     stopCamera();
-    showPhotoPreview(img);
-    await runOCR(img);
+
+    canvas.toBlob(async blob => {
+      lastCapturedBlob = blob;
+      showPhotoPreview(blob);                        // 미리보기 표시
+      const ocrURL = URL.createObjectURL(blob);
+      await runOCR(ocrURL);
+      URL.revokeObjectURL(ocrURL);                   // OCR 후 임시 URL 해제
+    }, 'image/jpeg', 0.92);
   });
 
-  // 갤러리
+  // 갤러리 — File 자체가 Blob이므로 바로 저장
   document.getElementById('btn-gallery').addEventListener('click', () => {
     document.getElementById('file-input').click();
   });
@@ -577,10 +572,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const file = e.target.files[0];
     if (!file) return;
     stopCamera();
-    const objectURL = URL.createObjectURL(file);
-    lastCapturedDataURL = objectURL;
-    showPhotoPreview(objectURL);
-    await runOCR(objectURL);
+    lastCapturedBlob = file;                         // File은 Blob 서브클래스
+    showPhotoPreview(file);                          // 미리보기 표시
+    const ocrURL = URL.createObjectURL(file);
+    await runOCR(ocrURL);
+    URL.revokeObjectURL(ocrURL);
     e.target.value = '';
   });
 
