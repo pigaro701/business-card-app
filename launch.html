@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>명함첩 실행</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #F5F3EF;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .card {
+      background: #fff;
+      border-radius: 20px;
+      padding: 40px 32px;
+      max-width: 420px;
+      width: 100%;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.10);
+      text-align: center;
+    }
+    h1 {
+      font-size: 28px;
+      color: #1C3A5E;
+      font-style: italic;
+      margin-bottom: 6px;
+    }
+    .sub {
+      font-size: 11px;
+      letter-spacing: 0.2em;
+      color: #B8860B;
+      text-transform: uppercase;
+      margin-bottom: 32px;
+    }
+    .section-label {
+      font-size: 11px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: #888;
+      margin-bottom: 12px;
+    }
+    /* PC 버튼 */
+    .btn-open {
+      display: inline-block;
+      background: #1C3A5E;
+      color: #fff;
+      text-decoration: none;
+      padding: 14px 36px;
+      border-radius: 12px;
+      font-size: 15px;
+      font-weight: 600;
+      margin-bottom: 36px;
+      transition: background 0.2s;
+    }
+    .btn-open:hover { background: #2D5A8E; }
+
+    /* 구분선 */
+    .divider {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 28px;
+      color: #ccc;
+      font-size: 12px;
+    }
+    .divider::before, .divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: #E8E4DC;
+    }
+
+    /* QR */
+    .qr-wrap {
+      display: inline-block;
+      padding: 12px;
+      background: #fff;
+      border: 2px solid #E8E4DC;
+      border-radius: 16px;
+      margin-bottom: 16px;
+    }
+    .qr-wrap img { display: block; width: 180px; height: 180px; }
+
+    .qr-hint {
+      font-size: 13px;
+      color: #666;
+      line-height: 1.6;
+      margin-bottom: 28px;
+    }
+
+    /* iOS 설치 안내 */
+    .install-steps {
+      background: #F0EDE8;
+      border-radius: 14px;
+      padding: 18px 20px;
+      text-align: left;
+    }
+    .install-steps h3 {
+      font-size: 12px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #1C3A5E;
+      margin-bottom: 12px;
+    }
+    .step {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      margin-bottom: 8px;
+      font-size: 13px;
+      color: #444;
+      line-height: 1.5;
+    }
+    .step-num {
+      background: #1C3A5E;
+      color: #fff;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      font-size: 11px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+    .url-box {
+      background: #F0EDE8;
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 12px;
+      color: #1C3A5E;
+      font-family: monospace;
+      word-break: break-all;
+      margin-bottom: 28px;
+      border: 1px solid #E0DAD0;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>명함첩</h1>
+    <p class="sub">Business Card Collection</p>
+
+    <!-- PC에서 바로 열기 -->
+    <p class="section-label">PC에서 열기</p>
+    <a class="btn-open" href="https://business-card-app-iota.vercel.app" target="_blank">
+      🖥️ 앱 바로 열기
+    </a>
+
+    <div class="divider">또는 모바일에서</div>
+
+    <!-- QR코드 -->
+    <p class="section-label">📱 폰으로 QR 스캔</p>
+    <div class="qr-wrap">
+      <img
+        src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&color=1C3A5E&bgcolor=ffffff&data=https://business-card-app-iota.vercel.app"
+        alt="QR코드"
+      >
+    </div>
+    <p class="qr-hint">
+      iPhone 카메라 앱으로 QR코드를 스캔하면<br>Safari에서 앱이 열립니다.
+    </p>
+
+    <!-- URL 직접 입력용 -->
+    <p class="section-label">직접 주소 입력</p>
+    <div class="url-box">business-card-app-iota.vercel.app</div>
+
+    <!-- iOS 홈화면 설치 안내 -->
+    <div class="install-steps">
+      <h3>📲 홈화면에 앱 추가 (iPhone)</h3>
+      <div class="step">
+        <div class="step-num">1</div>
+        <span>Safari에서 앱 주소 열기</span>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <span>하단 <strong>공유 버튼</strong> (□↑) 탭</span>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <span><strong>"홈 화면에 추가"</strong> 선택</span>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <span>홈화면에 명함첩 아이콘 생성 완료 ✅</span>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
