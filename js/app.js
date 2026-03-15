@@ -30,37 +30,24 @@ function loadTesseract() {
   });
 }
 
-// ── 카메라 ───────────────────────────────────────────────────────────────────
-async function startCamera() {
-  // Tesseract를 카메라 진입 시점에 미리 로딩 시작 (백그라운드)
+// ── 카메라: iOS 네이티브 input[capture] 방식 ─────────────────────────────────
+function startCamera() {
+  // Tesseract 미리 로딩 (백그라운드)
   loadTesseract().catch(() => {});
-
-  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-    document.getElementById('btn-capture').style.display = 'none';
-    document.getElementById('camera-frame').style.display = 'none';
-    showToast('HTTPS 환경에서만 카메라를 사용할 수 있습니다');
-    return;
-  }
-  try {
-    cameraStream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: 'environment', width: { ideal: 1920 } }
-    });
-    document.getElementById('camera-video').srcObject = cameraStream;
-  } catch (e) {
-    if (e.name === 'NotAllowedError') {
-      showToast('카메라 권한을 허용해주세요. 설정 > Safari > 카메라');
-    } else {
-      showToast('카메라를 사용할 수 없습니다. 갤러리를 이용해주세요');
-    }
-    document.getElementById('btn-capture').style.display = 'none';
-  }
 }
 
 function stopCamera() {
-  if (cameraStream) {
-    cameraStream.getTracks().forEach(t => t.stop());
-    cameraStream = null;
-  }
+  // 네이티브 카메라 방식에서는 스트림 정지 불필요
+  cameraStream = null;
+}
+
+// ── 이미지 파일 공통 처리 (카메라/갤러리 모두 사용) ──────────────────────────
+async function handleImageFile(file) {
+  lastCapturedBlob = file;          // 사진 저장용
+  showPhotoPreview(file);           // 미리보기 표시
+  const ocrURL = URL.createObjectURL(file);
+  await runOCR(ocrURL);
+  URL.revokeObjectURL(ocrURL);
 }
 
 // ── 사진 미리보기 표시 ────────────────────────────────────────────────────────
@@ -614,63 +601,29 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // 촬영
+  // 촬영 버튼 → iOS 네이티브 카메라 실행
   document.getElementById('btn-capture').addEventListener('click', () => {
-    const video  = document.getElementById('camera-video');
-    const canvas = document.getElementById('camera-canvas');
-
-    // 비디오 스트림 크기 확인
-    if (!video.videoWidth || !video.videoHeight) {
-      showToast('카메라 준비 중입니다. 잠시 후 다시 눌러주세요');
-      return;
-    }
-
-    canvas.width  = video.videoWidth;
-    canvas.height = video.videoHeight;
-    canvas.getContext('2d').drawImage(video, 0, 0);
-    stopCamera();
-
-    // toBlob 시도, 실패 시 dataURL로 폴백
-    try {
-      canvas.toBlob(blob => {
-        if (blob) {
-          lastCapturedBlob = blob;
-          showPhotoPreview(blob);
-          const ocrURL = URL.createObjectURL(blob);
-          runOCR(ocrURL).finally(() => URL.revokeObjectURL(ocrURL));
-        } else {
-          // blob이 null인 경우 dataURL 폴백
-          useDateURLFallback(canvas);
-        }
-      }, 'image/jpeg', 0.92);
-    } catch {
-      useDateURLFallback(canvas);
-    }
+    document.getElementById('camera-input').click();
   });
 
-  // dataURL 폴백 (toBlob 실패 시)
-  function useDateURLFallback(canvas) {
-    const dataURL = canvas.toDataURL('image/jpeg', 0.92);
-    fetch(dataURL).then(r => r.blob()).then(blob => {
-      lastCapturedBlob = blob;
-      showPhotoPreview(blob);
-      runOCR(dataURL);
-    });
-  }
+  // 카메라로 찍은 사진 처리
+  document.getElementById('camera-input').addEventListener('change', async e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    await handleImageFile(file);
+    e.target.value = '';
+  });
 
-  // 갤러리
+  // 갤러리 버튼 → 사진첩 열기
   document.getElementById('btn-gallery').addEventListener('click', () => {
     document.getElementById('file-input').click();
   });
+
+  // 갤러리에서 선택한 사진 처리
   document.getElementById('file-input').addEventListener('change', async e => {
     const file = e.target.files[0];
     if (!file) return;
-    stopCamera();
-    lastCapturedBlob = file;
-    showPhotoPreview(file);
-    const ocrURL = URL.createObjectURL(file);
-    await runOCR(ocrURL);
-    URL.revokeObjectURL(ocrURL);
+    await handleImageFile(file);
     e.target.value = '';
   });
 
