@@ -1,4 +1,4 @@
-const CACHE = 'myeonghamcheop-v1';
+const CACHE = 'myeonghamcheop-v5';  // 버전 올릴 때마다 캐시 강제 갱신
 const ASSETS = [
   '/',
   '/index.html',
@@ -23,11 +23,24 @@ self.addEventListener('activate', e => {
 });
 
 self.addEventListener('fetch', e => {
-  // CDN 요청은 캐시하지 않음
-  if (e.request.url.includes('cdn.jsdelivr') || e.request.url.includes('supabase')) {
+  // CDN / API 요청은 캐시하지 않음 (항상 네트워크)
+  if (
+    e.request.url.includes('cdn.jsdelivr') ||
+    e.request.url.includes('supabase') ||
+    e.request.url.includes('fonts.googleapis') ||
+    e.request.url.includes('fonts.gstatic') ||
+    e.request.url.includes('/api/')
+  ) {
     return;
   }
+  // 네트워크 우선 → 실패 시 캐시 (항상 최신 코드 사용)
   e.respondWith(
-    caches.match(e.request).then(r => r || fetch(e.request))
+    fetch(e.request)
+      .then(res => {
+        const clone = res.clone();
+        caches.open(CACHE).then(c => c.put(e.request, clone));
+        return res;
+      })
+      .catch(() => caches.match(e.request))
   );
 });
