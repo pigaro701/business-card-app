@@ -2,8 +2,7 @@
 .env
 *.env
 
-# 앱 설정 (API Key 포함)
-js/config.js
+# js/config.js는 배포 필요로 인해 추적함
 
 # Claude 내부 설정
 .claude/
@@ -23,3 +22,5 @@ Thumbs.db
 # 에디터
 .vscode/
 .idea/
+
+.vercel
