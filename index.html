@@ -3,13 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <meta name="theme-color" content="#0A0A0A">
+  <meta name="theme-color" content="#D6EFFF">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <title>명함첩</title>
   <link rel="manifest" href="manifest.json">
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Mono:wght@300;400&family=Noto+Serif+KR:wght@300;400;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400;1,600&family=DM+Mono:wght@300;400&family=Noto+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -26,9 +26,9 @@
       </header>
       <div class="card-grid" id="card-list">
         <div class="empty-state" id="empty-state">
-          <div class="empty-icon">◈</div>
-          <p>저장된 명함이 없습니다</p>
-          <p class="empty-sub">아래 + 버튼으로 첫 명함을 추가하세요</p>
+          <div class="empty-icon">🐧</div>
+          <p class="empty-title">명함이 아직 없어요!</p>
+          <p class="empty-sub">아래 <strong>+</strong> 버튼을 눌러서<br>첫 번째 명함을 추가해보세요 😊</p>
         </div>
       </div>
     </section>
@@ -76,7 +76,7 @@
         <div class="ocr-status" id="ocr-status"></div>
         <form id="card-form">
           <div class="form-section">
-            <h3 class="form-section-title">인물 정보</h3>
+            <h3 class="form-section-title">👤 인물 정보</h3>
             <div class="field-group">
               <input type="text" id="field-name" placeholder="이름" class="field-input" autocomplete="name">
               <label class="field-label" for="field-name">이름</label>
@@ -104,7 +104,7 @@
           </div>
 
           <div class="form-section">
-            <h3 class="form-section-title">만남 정보</h3>
+            <h3 class="form-section-title">🤝 만남 정보</h3>
             <div class="field-group">
               <input type="text" id="field-met-location" placeholder="만난 장소" class="field-input">
               <label class="field-label" for="field-met-location">만난 장소</label>
@@ -184,7 +184,7 @@
       <div class="form-panel">
         <form id="edit-form">
           <div class="form-section">
-            <h3 class="form-section-title">인물 정보</h3>
+            <h3 class="form-section-title">👤 인물 정보</h3>
             <div class="field-group">
               <input type="text" id="edit-name" placeholder="이름" class="field-input">
               <label class="field-label" for="edit-name">이름</label>
@@ -211,7 +211,7 @@
             </div>
           </div>
           <div class="form-section">
-            <h3 class="form-section-title">만남 정보</h3>
+            <h3 class="form-section-title">🤝 만남 정보</h3>
             <div class="field-group">
               <input type="text" id="edit-met-location" placeholder="만난 장소" class="field-input">
               <label class="field-label" for="edit-met-location">만난 장소</label>
@@ -244,7 +244,7 @@
           <div class="avatar-circle" id="avatar-initials">?</div>
         </div>
         <div class="form-section">
-          <h3 class="form-section-title">내 정보</h3>
+          <h3 class="form-section-title">😊 내 정보</h3>
           <div class="field-group">
             <input type="text" id="profile-name" placeholder="이름" class="field-input" autocomplete="name">
             <label class="field-label" for="profile-name">이름</label>
@@ -268,7 +268,7 @@
         </div>
 
         <div class="form-section">
-          <h3 class="form-section-title">EmailJS 설정</h3>
+          <h3 class="form-section-title">✉️ EmailJS 설정</h3>
           <div class="field-group">
             <input type="text" id="profile-emailjs-service" placeholder="Service ID" class="field-input">
             <label class="field-label" for="profile-emailjs-service">Service ID</label>
@@ -299,17 +299,11 @@
   <!-- Bottom Navigation — #app 밖에 위치 -->
   <nav class="bottom-nav">
     <button class="nav-item active" data-screen="home">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
-        <polyline points="9 22 9 12 15 12 15 22"/>
-      </svg>
+      <span class="nav-emoji">📇</span>
       <span>명함첩</span>
     </button>
     <button class="nav-item" data-screen="profile">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-        <path d="M20 21v-2a4 4 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-        <circle cx="12" cy="7" r="4"/>
-      </svg>
+      <span class="nav-emoji">🙋</span>
       <span>내 프로필</span>
     </button>
   </nav>
