@@ -441,6 +441,43 @@ html, body {
 }
 .btn-gallery svg { width: 20px; height: 20px; }
 
+/* ── Photo Preview ── */
+.photo-preview {
+  width: 100%;
+  max-width: 360px;
+  position: relative;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: var(--shadow-md);
+}
+
+.preview-img {
+  width: 100%;
+  display: block;
+  border-radius: 14px;
+}
+
+.btn-save-photo {
+  position: absolute;
+  bottom: 12px;
+  right: 12px;
+  background: rgba(0, 0, 0, 0.70);
+  color: #FFFFFF;
+  border: none;
+  border-radius: 22px;
+  padding: 10px 18px;
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  touch-action: manipulation;
+  letter-spacing: 0.02em;
+  transition: transform 0.15s, background 0.15s;
+}
+.btn-save-photo:active { transform: scale(0.95); background: rgba(0,0,0,0.85); }
+
 /* ── Form ── */
 .form-panel {
   padding: 8px 16px 120px;

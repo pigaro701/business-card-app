@@ -6,6 +6,7 @@ let currentCard = null;
 let gpsData = { lat: null, lng: null };
 let cameraStream = null;
 let tesseractLoaded = false;
+let lastCapturedDataURL = null;
 
 // ── 화면 전환 ─────────────────────────────────────────────────────────────────
 function showScreen(id) {
@@ -67,7 +68,56 @@ function captureFrame() {
   canvas.width = video.videoWidth;
   canvas.height = video.videoHeight;
   canvas.getContext('2d').drawImage(video, 0, 0);
-  return canvas.toDataURL('image/jpeg', 0.92);
+  const dataURL = canvas.toDataURL('image/jpeg', 0.92);
+  lastCapturedDataURL = dataURL;
+  return dataURL;
+}
+
+// ── 사진 미리보기 표시 ────────────────────────────────────────────────────────
+function showPhotoPreview(src) {
+  const wrap = document.getElementById('photo-preview');
+  const img  = document.getElementById('photo-preview-img');
+  img.src = src;
+  wrap.style.display = 'block';
+}
+
+function hidePhotoPreview() {
+  const wrap = document.getElementById('photo-preview');
+  wrap.style.display = 'none';
+  document.getElementById('photo-preview-img').src = '';
+  lastCapturedDataURL = null;
+}
+
+// ── 사진 저장 (iOS 사진첩) ────────────────────────────────────────────────────
+async function savePhotoToGallery() {
+  if (!lastCapturedDataURL) { showToast('저장할 사진이 없습니다'); return; }
+
+  try {
+    // dataURL → Blob → File
+    const res  = await fetch(lastCapturedDataURL);
+    const blob = await res.blob();
+    const filename = `명함_${new Date().toISOString().slice(0,10)}_${Date.now()}.jpg`;
+    const file = new File([blob], filename, { type: 'image/jpeg' });
+
+    // Web Share API (iOS Safari 지원) — 사진첩 저장 가능
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      await navigator.share({ files: [file], title: '명함 사진' });
+      showToast('공유 메뉴에서 "이미지 저장"을 선택해주세요 📷');
+    } else {
+      // 폴백: 다운로드 링크 (Android / 데스크탑)
+      const url = URL.createObjectURL(blob);
+      const a   = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast('사진 저장 완료 ✓');
+    }
+  } catch (e) {
+    if (e.name !== 'AbortError') {
+      showToast('사진 저장 실패. 미리보기를 길게 눌러 저장해보세요');
+    }
+  }
 }
 
 // ── OCR ──────────────────────────────────────────────────────────────────────
@@ -447,6 +497,7 @@ function resetScanForm() {
   gpsData = { lat: null, lng: null };
   document.getElementById('gps-text').textContent = '위치 감지 중...';
   setOCRStatus('');
+  hidePhotoPreview();
 
   const now = new Date();
   now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
@@ -514,6 +565,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('btn-capture').addEventListener('click', async () => {
     const img = captureFrame();
     stopCamera();
+    showPhotoPreview(img);
     await runOCR(img);
   });
 
@@ -525,11 +577,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const file = e.target.files[0];
     if (!file) return;
     stopCamera();
-    showLoading('이미지 처리 중...');
-    hideLoading();
-    await runOCR(URL.createObjectURL(file));
+    const objectURL = URL.createObjectURL(file);
+    lastCapturedDataURL = objectURL;
+    showPhotoPreview(objectURL);
+    await runOCR(objectURL);
     e.target.value = '';
   });
+
+  // 사진 저장 버튼
+  document.getElementById('btn-save-photo').addEventListener('click', savePhotoToGallery);
 
   // 명함 저장
   document.getElementById('card-form').addEventListener('submit', async e => {

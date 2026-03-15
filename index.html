@@ -72,6 +72,14 @@
         <input type="file" id="file-input" accept="image/*" capture="environment" style="display:none">
       </div>
 
+      <!-- 촬영/선택된 사진 미리보기 + 저장 버튼 -->
+      <div class="photo-preview" id="photo-preview" style="display:none">
+        <img id="photo-preview-img" class="preview-img" alt="촬영된 명함">
+        <button class="btn-save-photo" id="btn-save-photo" type="button">
+          📸 사진 저장
+        </button>
+      </div>
+
       <div class="form-panel" id="form-panel">
         <div class="ocr-status" id="ocr-status"></div>
         <form id="card-form">
