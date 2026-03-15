@@ -467,4 +467,27 @@ document.addEventListener('DOMContentLoaded', () => {
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js').catch(() => {});
   }
+
+  // iOS: 키보드가 올라올 때 스크롤 영역 유지
+  const inputs = document.querySelectorAll('.field-input');
+  inputs.forEach(input => {
+    input.addEventListener('focus', () => {
+      setTimeout(() => {
+        input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 300);
+    });
+  });
+
+  // iOS Safari에서 주소창 숨길 때 높이 재계산
+  window.addEventListener('resize', () => {
+    document.documentElement.style.setProperty('--dvh', `${window.innerHeight}px`);
+  });
+  document.documentElement.style.setProperty('--dvh', `${window.innerHeight}px`);
+
+  // iOS: 카메라 getUserMedia 미지원 시 갤러리로 폴백
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    document.getElementById('btn-capture').style.display = 'none';
+    document.getElementById('camera-frame').style.display = 'none';
+    showToast('카메라 직접 촬영은 HTTPS에서만 지원됩니다');
+  }
 });

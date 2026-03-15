@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <meta name="theme-color" content="#0A0A0A">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -73,7 +73,8 @@
           </button>
           <div style="width:44px"></div>
         </div>
-        <input type="file" id="file-input" accept="image/*" style="display:none">
+        <!-- capture="environment" → iOS에서 카메라 직접 실행 -->
+        <input type="file" id="file-input" accept="image/*" capture="environment" style="display:none">
       </div>
 
       <div class="form-panel" id="form-panel">

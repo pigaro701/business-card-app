@@ -16,6 +16,8 @@
   --radius: 14px;
   --radius-lg: 22px;
   --nav-height: 68px;
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-top: env(safe-area-inset-top, 0px);
   --font-display: 'Cormorant Garamond', 'Noto Serif KR', serif;
   --font-mono: 'DM Mono', monospace;
   --font-body: 'Noto Serif KR', serif;
@@ -43,6 +45,8 @@ html, body {
 /* ── App Shell ── */
 #app {
   height: 100dvh;
+  /* iOS Safari fallback */
+  height: -webkit-fill-available;
   position: relative;
   overflow: hidden;
   display: flex;
@@ -50,13 +54,14 @@ html, body {
   background:
     radial-gradient(ellipse 60% 40% at 80% 10%, rgba(201,169,110,0.04) 0%, transparent 60%),
     var(--bg);
+  padding-top: var(--safe-top);
 }
 
 /* ── Screens ── */
 .screen {
   position: absolute;
   inset: 0;
-  bottom: var(--nav-height);
+  bottom: calc(var(--nav-height) + var(--safe-bottom));
   display: flex;
   flex-direction: column;
   opacity: 0;
@@ -178,7 +183,7 @@ html, body {
 /* ── FAB ── */
 .fab {
   position: fixed;
-  bottom: calc(var(--nav-height) + 20px);
+  bottom: calc(var(--nav-height) + var(--safe-bottom) + 20px);
   right: 20px;
   width: 56px;
   height: 56px;
@@ -426,11 +431,15 @@ html, body {
   padding: 15px 14px 9px;
   color: var(--text);
   font-family: var(--font-body);
-  font-size: 15px;
+  /* iOS: 16px 미만이면 포커스 시 자동 줌인 발생 → 반드시 16px */
+  font-size: 16px;
   outline: none;
   transition: border-color 0.2s, background 0.2s;
   appearance: none;
   -webkit-appearance: none;
+  /* iOS에서 input 내부 그림자 제거 */
+  -webkit-box-shadow: none;
+  box-shadow: none;
 }
 .field-input:focus {
   border-color: var(--gold-dim);
@@ -615,7 +624,7 @@ html, body {
 
 /* ── Bottom Nav ── */
 .bottom-nav {
-  height: var(--nav-height);
+  height: calc(var(--nav-height) + var(--safe-bottom));
   background: rgba(14, 14, 14, 0.96);
   border-top: 1px solid var(--border);
   display: flex;
@@ -626,6 +635,8 @@ html, body {
   z-index: 100;
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
+  /* iOS 홈바 영역까지 배경 확장 */
+  padding-bottom: var(--safe-bottom);
 }
 
 .nav-item {
@@ -652,7 +663,7 @@ html, body {
 /* ── Toast ── */
 .toast {
   position: fixed;
-  bottom: calc(var(--nav-height) + 12px);
+  bottom: calc(var(--nav-height) + var(--safe-bottom) + 12px);
   left: 50%;
   transform: translateX(-50%) translateY(8px);
   background: var(--surface-2);

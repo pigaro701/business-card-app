@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(winget install:*)",
+      "Bash(git:*)",
+      "Bash(gh auth:*)",
+      "Bash(cd:*)",
+      "mcp__plugin_prompts_chat_prompts_chat__search_skills",
+      "mcp__plugin_prompts_chat_prompts_chat__get_skill",
+      "Bash(python:*)",
+      "Bash(where python:*)",
+      "Bash(node:*)"
+    ]
+  }
+}
