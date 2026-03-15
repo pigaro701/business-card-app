@@ -36,7 +36,7 @@
     <!-- ── Screen: 명함 스캔/추가 ── -->
     <section class="screen" id="screen-scan">
       <header class="screen-header">
-        <button class="btn-back" id="btn-back-scan">
+        <button class="btn-back" id="btn-back-scan" aria-label="뒤로 가기">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
         </button>
         <h2 class="screen-title">명함 스캔</h2>
@@ -78,27 +78,27 @@
           <div class="form-section">
             <h3 class="form-section-title">인물 정보</h3>
             <div class="field-group">
-              <input type="text" id="field-name" placeholder="이름" class="field-input">
+              <input type="text" id="field-name" placeholder="이름" class="field-input" autocomplete="name">
               <label class="field-label" for="field-name">이름</label>
             </div>
             <div class="field-group">
-              <input type="text" id="field-company" placeholder="회사" class="field-input">
+              <input type="text" id="field-company" placeholder="회사" class="field-input" autocomplete="organization">
               <label class="field-label" for="field-company">회사</label>
             </div>
             <div class="field-group">
-              <input type="text" id="field-position" placeholder="직책" class="field-input">
+              <input type="text" id="field-position" placeholder="직책" class="field-input" autocomplete="organization-title">
               <label class="field-label" for="field-position">직책</label>
             </div>
             <div class="field-group">
-              <input type="tel" id="field-phone" placeholder="전화번호" class="field-input">
+              <input type="tel" id="field-phone" placeholder="전화번호" class="field-input" autocomplete="tel">
               <label class="field-label" for="field-phone">전화번호</label>
             </div>
             <div class="field-group">
-              <input type="email" id="field-email" placeholder="이메일" class="field-input">
+              <input type="email" id="field-email" placeholder="이메일" class="field-input" autocomplete="email">
               <label class="field-label" for="field-email">이메일</label>
             </div>
             <div class="field-group">
-              <input type="text" id="field-address" placeholder="주소" class="field-input">
+              <input type="text" id="field-address" placeholder="주소" class="field-input" autocomplete="street-address">
               <label class="field-label" for="field-address">주소</label>
             </div>
           </div>
@@ -133,18 +133,18 @@
     <!-- ── Screen: 명함 상세 ── -->
     <section class="screen" id="screen-detail">
       <header class="screen-header">
-        <button class="btn-back" id="btn-back-detail">
+        <button class="btn-back" id="btn-back-detail" aria-label="뒤로 가기">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
         </button>
         <h2 class="screen-title">명함 상세</h2>
         <div class="header-actions">
-          <button class="btn-icon-gold" id="btn-edit">
+          <button class="btn-icon-gold" id="btn-edit" aria-label="수정">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
               <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
               <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
             </svg>
           </button>
-          <button class="btn-icon-danger" id="btn-delete">
+          <button class="btn-icon-danger" id="btn-delete" aria-label="삭제">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
               <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/>
             </svg>
@@ -176,7 +176,7 @@
     <!-- ── Screen: 명함 수정 ── -->
     <section class="screen" id="screen-edit">
       <header class="screen-header">
-        <button class="btn-back" id="btn-back-edit">
+        <button class="btn-back" id="btn-back-edit" aria-label="뒤로 가기">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
         </button>
         <h2 class="screen-title">명함 수정</h2>
@@ -233,7 +233,7 @@
     <!-- ── Screen: 내 프로필 ── -->
     <section class="screen" id="screen-profile">
       <header class="screen-header">
-        <button class="btn-back" id="btn-back-profile">
+        <button class="btn-back" id="btn-back-profile" aria-label="뒤로 가기">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
         </button>
         <h2 class="screen-title">내 프로필</h2>
@@ -246,23 +246,23 @@
         <div class="form-section">
           <h3 class="form-section-title">내 정보</h3>
           <div class="field-group">
-            <input type="text" id="profile-name" placeholder="이름" class="field-input">
+            <input type="text" id="profile-name" placeholder="이름" class="field-input" autocomplete="name">
             <label class="field-label" for="profile-name">이름</label>
           </div>
           <div class="field-group">
-            <input type="email" id="profile-email" placeholder="이메일" class="field-input">
+            <input type="email" id="profile-email" placeholder="이메일" class="field-input" autocomplete="email">
             <label class="field-label" for="profile-email">이메일</label>
           </div>
           <div class="field-group">
-            <input type="tel" id="profile-phone" placeholder="전화번호" class="field-input">
+            <input type="tel" id="profile-phone" placeholder="전화번호" class="field-input" autocomplete="tel">
             <label class="field-label" for="profile-phone">전화번호</label>
           </div>
           <div class="field-group">
-            <input type="text" id="profile-company" placeholder="회사" class="field-input">
+            <input type="text" id="profile-company" placeholder="회사" class="field-input" autocomplete="organization">
             <label class="field-label" for="profile-company">회사</label>
           </div>
           <div class="field-group">
-            <input type="text" id="profile-position" placeholder="직책" class="field-input">
+            <input type="text" id="profile-position" placeholder="직책" class="field-input" autocomplete="organization-title">
             <label class="field-label" for="profile-position">직책</label>
           </div>
         </div>
@@ -325,7 +325,7 @@
 
   <!-- Scripts -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+  <!-- Tesseract.js는 스캔 화면 진입 시 lazy load (app.js에서 처리) -->
   <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
   <script src="js/config.js"></script>
   <script src="js/app.js"></script>

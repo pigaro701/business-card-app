@@ -5,6 +5,7 @@ const db = supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
 let currentCard = null;
 let gpsData = { lat: null, lng: null };
 let cameraStream = null;
+let tesseractLoaded = false;
 
 // ── 화면 전환 ─────────────────────────────────────────────────────────────────
 function showScreen(id) {
@@ -15,15 +16,41 @@ function showScreen(id) {
   });
 }
 
+// ── Tesseract 지연 로딩 (성능 최적화) ────────────────────────────────────────
+function loadTesseract() {
+  return new Promise((resolve, reject) => {
+    if (tesseractLoaded && window.Tesseract) { resolve(); return; }
+    const script = document.createElement('script');
+    script.src = 'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js';
+    script.onload = () => { tesseractLoaded = true; resolve(); };
+    script.onerror = () => reject(new Error('Tesseract 로드 실패'));
+    document.head.appendChild(script);
+  });
+}
+
 // ── 카메라 ───────────────────────────────────────────────────────────────────
 async function startCamera() {
+  // Tesseract를 카메라 진입 시점에 미리 로딩 시작 (백그라운드)
+  loadTesseract().catch(() => {});
+
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    document.getElementById('btn-capture').style.display = 'none';
+    document.getElementById('camera-frame').style.display = 'none';
+    showToast('HTTPS 환경에서만 카메라를 사용할 수 있습니다');
+    return;
+  }
   try {
     cameraStream = await navigator.mediaDevices.getUserMedia({
       video: { facingMode: 'environment', width: { ideal: 1920 } }
     });
     document.getElementById('camera-video').srcObject = cameraStream;
-  } catch {
-    showToast('카메라 권한이 필요합니다');
+  } catch (e) {
+    if (e.name === 'NotAllowedError') {
+      showToast('카메라 권한을 허용해주세요. 설정 > Safari > 카메라');
+    } else {
+      showToast('카메라를 사용할 수 없습니다. 갤러리를 이용해주세요');
+    }
+    document.getElementById('btn-capture').style.display = 'none';
   }
 }
 
@@ -45,9 +72,10 @@ function captureFrame() {
 
 // ── OCR ──────────────────────────────────────────────────────────────────────
 async function runOCR(imageSource) {
-  setOCRStatus('명함 인식 중...');
-  showLoading('OCR 처리 중...');
+  setOCRStatus('명함 인식 준비 중...');
+  showLoading('OCR 준비 중...');
   try {
+    await loadTesseract();
     const { data: { text } } = await Tesseract.recognize(imageSource, 'kor+eng', {
       logger: m => {
         if (m.status === 'recognizing text') {
@@ -56,9 +84,14 @@ async function runOCR(imageSource) {
       }
     });
     parseOCRText(text);
-    setOCRStatus('인식 완료 — 내용을 확인하고 수정해주세요');
+    setOCRStatus('인식 완료 ✓  아래 내용을 확인·수정 후 저장해주세요');
+    // OCR 완료 후 폼으로 스크롤
+    setTimeout(() => {
+      document.getElementById('card-form')
+        .scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 300);
   } catch {
-    setOCRStatus('인식 실패 — 직접 입력해주세요');
+    setOCRStatus('인식 실패 — 조명을 밝게 하거나 직접 입력해주세요');
   } finally {
     hideLoading();
   }
@@ -73,8 +106,10 @@ function parseOCRText(raw) {
   const rest = [];
 
   for (const line of lines) {
-    if (!email && emailRe.test(line)) { email = line.match(emailRe)[0]; continue; }
-    if (!phone && phoneRe.test(line)) { phone = line.match(phoneRe)[0]; continue; }
+    const emailMatch = line.match(emailRe);
+    const phoneMatch = line.match(phoneRe);
+    if (!email && emailMatch) { email = emailMatch[0]; continue; }
+    if (!phone && phoneMatch) { phone = phoneMatch[0]; continue; }
     rest.push(line);
   }
 
@@ -106,7 +141,7 @@ function getGPS() {
       gpsData.lat = pos.coords.latitude;
       gpsData.lng = pos.coords.longitude;
       document.getElementById('gps-text').textContent =
-        `GPS: ${gpsData.lat.toFixed(5)}, ${gpsData.lng.toFixed(5)}`;
+        `GPS 기록됨 (${gpsData.lat.toFixed(4)}, ${gpsData.lng.toFixed(4)})`;
     },
     () => {
       document.getElementById('gps-text').textContent = '위치 정보 없음';
@@ -116,28 +151,38 @@ function getGPS() {
 
 // ── Cards CRUD ────────────────────────────────────────────────────────────────
 async function loadCards() {
+  // 목록에는 필요한 컬럼만 (성능 최적화)
   const { data, error } = await db
     .from('business_cards')
-    .select('*')
-    .order('created_at', { ascending: false });
+    .select('id, name, company, position, phone, email, met_location, met_datetime, met_reason, address, gps_lat, gps_lng, created_at')
+    .order('created_at', { ascending: false })
+    .limit(100);
 
-  if (error) { showToast('데이터 로드 실패'); return; }
+  if (error) {
+    showToast('데이터 로드 실패. 인터넷 연결을 확인해주세요');
+    console.error('loadCards error:', error);
+    return;
+  }
   renderCards(data || []);
 }
 
 function renderCards(cards) {
   const list = document.getElementById('card-list');
   const empty = document.getElementById('empty-state');
-  list.querySelectorAll('.card-item').forEach(el => el.remove());
 
-  const count = document.getElementById('card-count');
-  count.textContent = `${cards.length}장`;
+  // DocumentFragment로 한 번에 렌더링 (성능 최적화)
+  const fragment = document.createDocumentFragment();
+
+  document.getElementById('card-count').textContent = `${cards.length}장`;
 
   if (cards.length === 0) {
+    list.querySelectorAll('.card-item').forEach(el => el.remove());
     empty.style.display = 'block';
     return;
   }
   empty.style.display = 'none';
+
+  list.querySelectorAll('.card-item').forEach(el => el.remove());
 
   cards.forEach((card, i) => {
     const el = document.createElement('div');
@@ -159,16 +204,22 @@ function renderCards(cards) {
       </div>
     `;
     el.addEventListener('click', () => showDetail(card));
-    list.insertBefore(el, empty);
+    fragment.appendChild(el);
   });
+
+  list.appendChild(fragment);
 }
 
 async function saveCard(data) {
   showLoading('저장 중...');
   const { error } = await db.from('business_cards').insert([data]);
   hideLoading();
-  if (error) { showToast('저장 실패: ' + error.message); return false; }
-  showToast('명함이 저장되었습니다');
+  if (error) {
+    showToast('저장 실패. 인터넷 연결을 확인해주세요');
+    console.error('saveCard error:', error);
+    return false;
+  }
+  showToast('명함이 저장되었습니다 ✓');
   return true;
 }
 
@@ -176,7 +227,8 @@ async function deleteCard(id) {
   showLoading('삭제 중...');
   const { error } = await db.from('business_cards').delete().eq('id', id);
   hideLoading();
-  if (error) { showToast('삭제 실패'); return; }
+  if (error) { showToast('삭제 실패. 다시 시도해주세요'); return; }
+  currentCard = null;
   showToast('삭제되었습니다');
   showScreen('home');
   loadCards();
@@ -243,8 +295,12 @@ async function updateCard(id, data) {
   showLoading('수정 중...');
   const { error } = await db.from('business_cards').update(data).eq('id', id);
   hideLoading();
-  if (error) { showToast('수정 실패: ' + error.message); return false; }
-  showToast('수정되었습니다');
+  if (error) {
+    showToast('수정 실패. 인터넷 연결을 확인해주세요');
+    console.error('updateCard error:', error);
+    return false;
+  }
+  showToast('수정되었습니다 ✓');
   return true;
 }
 
@@ -269,7 +325,7 @@ function downloadVCard(card) {
   a.download = `${card.name || 'contact'}.vcf`;
   a.click();
   URL.revokeObjectURL(url);
-  showToast('vCard 다운로드 완료');
+  showToast('vCard 다운로드 완료. 파일을 열어 연락처에 추가해주세요');
 }
 
 // ── 인사 이메일 ───────────────────────────────────────────────────────────────
@@ -277,11 +333,12 @@ async function sendGreetingEmail(card) {
   const profile = getProfile();
 
   if (!profile.name || !profile.email) {
-    showToast('내 프로필(이름, 이메일)을 먼저 설정해주세요');
+    showToast('내 프로필에서 이름과 이메일을 먼저 설정해주세요');
+    setTimeout(() => { loadProfileForm(); showScreen('profile'); }, 1500);
     return;
   }
   if (!card.email) {
-    showToast('상대방 이메일 정보가 없습니다');
+    showToast('상대방 이메일 정보가 없습니다. 수정 버튼으로 추가해주세요');
     return;
   }
 
@@ -291,6 +348,7 @@ async function sendGreetingEmail(card) {
 
   if (!serviceId || !templateId || !publicKey) {
     showToast('프로필에서 EmailJS 설정을 완료해주세요');
+    setTimeout(() => { loadProfileForm(); showScreen('profile'); }, 1500);
     return;
   }
 
@@ -315,7 +373,9 @@ async function sendGreetingEmail(card) {
     });
     showToast('인사 이메일을 발송했습니다 ✓');
   } catch (e) {
-    showToast('이메일 발송 실패: ' + (e?.text || '설정을 확인해주세요'));
+    console.error('emailjs error:', e);
+    const msg = e?.text || e?.message || '알 수 없는 오류';
+    showToast(`이메일 발송 실패: ${msg}`);
   } finally {
     hideLoading();
   }
@@ -332,15 +392,20 @@ function saveProfile(data) {
 
 function loadProfileForm() {
   const p = getProfile();
-  const fields = ['name', 'email', 'phone', 'company', 'position',
-                  'emailjs_service', 'emailjs_template', 'emailjs_key'];
-  fields.forEach(k => {
-    const el = document.getElementById(`profile-${k.replace('_', '-')}`);
-    // handle compound ids
-    const el2 = document.getElementById(`profile-emailjs-${k.replace('emailjs_', '')}`);
-    const target = el || el2;
-    if (target && p[k]) target.value = p[k];
-  });
+  const map = {
+    'profile-name':             p.name,
+    'profile-email':            p.email,
+    'profile-phone':            p.phone,
+    'profile-company':          p.company,
+    'profile-position':         p.position,
+    'profile-emailjs-service':  p.emailjs_service,
+    'profile-emailjs-template': p.emailjs_template,
+    'profile-emailjs-key':      p.emailjs_key,
+  };
+  for (const [id, val] of Object.entries(map)) {
+    const el = document.getElementById(id);
+    if (el && val) el.value = val;
+  }
   updateAvatar(p.name);
 }
 
@@ -364,7 +429,7 @@ function showToast(msg) {
   toast.textContent = msg;
   toast.classList.add('show');
   clearTimeout(toast._t);
-  toast._t = setTimeout(() => toast.classList.remove('show'), 3000);
+  toast._t = setTimeout(() => toast.classList.remove('show'), 3500);
 }
 
 function showLoading(msg = '처리 중...') {
@@ -378,11 +443,11 @@ function hideLoading() {
 
 function resetScanForm() {
   document.getElementById('card-form').reset();
+  document.getElementById('btn-capture').style.display = '';
   gpsData = { lat: null, lng: null };
   document.getElementById('gps-text').textContent = '위치 감지 중...';
   setOCRStatus('');
 
-  // 현재 시간 자동 입력
   const now = new Date();
   now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
   document.getElementById('field-met-datetime').value = now.toISOString().slice(0, 16);
@@ -415,6 +480,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   document.getElementById('btn-back-detail').addEventListener('click', () => showScreen('home'));
   document.getElementById('btn-back-edit').addEventListener('click', () => showScreen('detail'));
+  document.getElementById('btn-back-profile').addEventListener('click', () => showScreen('home'));
 
   // 수정 버튼
   document.getElementById('btn-edit').addEventListener('click', () => {
@@ -424,6 +490,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // 수정 폼 저장
   document.getElementById('edit-form').addEventListener('submit', async e => {
     e.preventDefault();
+    if (!currentCard) return;
     const data = {
       name:         document.getElementById('edit-name').value.trim(),
       company:      document.getElementById('edit-company').value.trim(),
@@ -442,7 +509,6 @@ document.addEventListener('DOMContentLoaded', () => {
       loadCards();
     }
   });
-  document.getElementById('btn-back-profile').addEventListener('click', () => showScreen('home'));
 
   // 촬영
   document.getElementById('btn-capture').addEventListener('click', async () => {
@@ -459,6 +525,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const file = e.target.files[0];
     if (!file) return;
     stopCamera();
+    showLoading('이미지 처리 중...');
+    hideLoading();
     await runOCR(URL.createObjectURL(file));
     e.target.value = '';
   });
@@ -497,7 +565,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // 상세 — 삭제
   document.getElementById('btn-delete').addEventListener('click', () => {
     if (!currentCard) return;
-    if (confirm(`"${currentCard.name || '이 명함'}"을 삭제할까요?`)) {
+    if (confirm(`"${currentCard.name || '이 명함'}"을 삭제할까요?\n삭제 후 복구할 수 없습니다.`)) {
       deleteCard(currentCard.id);
     }
   });
@@ -506,49 +574,42 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('profile-form').addEventListener('submit', e => {
     e.preventDefault();
     const data = {
-      name:            document.getElementById('profile-name').value.trim(),
-      email:           document.getElementById('profile-email').value.trim(),
-      phone:           document.getElementById('profile-phone').value.trim(),
-      company:         document.getElementById('profile-company').value.trim(),
-      position:        document.getElementById('profile-position').value.trim(),
-      emailjs_service: document.getElementById('profile-emailjs-service').value.trim(),
-      emailjs_template:document.getElementById('profile-emailjs-template').value.trim(),
-      emailjs_key:     document.getElementById('profile-emailjs-key').value.trim(),
+      name:             document.getElementById('profile-name').value.trim(),
+      email:            document.getElementById('profile-email').value.trim(),
+      phone:            document.getElementById('profile-phone').value.trim(),
+      company:          document.getElementById('profile-company').value.trim(),
+      position:         document.getElementById('profile-position').value.trim(),
+      emailjs_service:  document.getElementById('profile-emailjs-service').value.trim(),
+      emailjs_template: document.getElementById('profile-emailjs-template').value.trim(),
+      emailjs_key:      document.getElementById('profile-emailjs-key').value.trim(),
     };
     saveProfile(data);
     updateAvatar(data.name);
-    showToast('프로필이 저장되었습니다');
+    showToast('프로필이 저장되었습니다 ✓');
   });
 
-  // 초기 로딩
-  loadCards();
+  // 초기 로딩 (병렬)
+  Promise.all([
+    loadCards(),
+    navigator.serviceWorker
+      ? navigator.serviceWorker.register('sw.js').catch(() => {})
+      : Promise.resolve()
+  ]);
   loadProfileForm();
 
-  // PWA Service Worker 등록
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('sw.js').catch(() => {});
-  }
+  // 오프라인/온라인 감지
+  window.addEventListener('online',  () => { showToast('인터넷에 연결되었습니다'); loadCards(); });
+  window.addEventListener('offline', () => showToast('오프라인 상태입니다'));
 
-  // iOS: 키보드가 올라올 때 스크롤 영역 유지
-  const inputs = document.querySelectorAll('.field-input');
-  inputs.forEach(input => {
+  // iOS: 키보드 올라올 때 입력창 스크롤
+  document.querySelectorAll('.field-input').forEach(input => {
     input.addEventListener('focus', () => {
-      setTimeout(() => {
-        input.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }, 300);
+      setTimeout(() => input.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300);
     });
   });
 
-  // iOS Safari에서 주소창 숨길 때 높이 재계산
-  window.addEventListener('resize', () => {
-    document.documentElement.style.setProperty('--dvh', `${window.innerHeight}px`);
-  });
-  document.documentElement.style.setProperty('--dvh', `${window.innerHeight}px`);
-
-  // iOS: 카메라 getUserMedia 미지원 시 갤러리로 폴백
-  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-    document.getElementById('btn-capture').style.display = 'none';
-    document.getElementById('camera-frame').style.display = 'none';
-    showToast('카메라 직접 촬영은 HTTPS에서만 지원됩니다');
-  }
+  // iOS Safari 높이 재계산
+  const setVH = () => document.documentElement.style.setProperty('--dvh', `${window.innerHeight}px`);
+  window.addEventListener('resize', setVH);
+  setVH();
 });

@@ -11,7 +11,7 @@
   --gold-bg: #FFF8E7;
   --text: #1A1A1A;
   --text-dim: rgba(26, 26, 26, 0.5);
-  --text-muted: rgba(26, 26, 26, 0.35);
+  --text-muted: rgba(26, 26, 26, 0.5);
   --danger: #C0392B;
   --danger-bg: #FFF0EE;
   --success: #27AE60;
@@ -139,13 +139,14 @@ html, body {
   border: none;
   color: var(--navy);
   cursor: pointer;
-  width: 36px;
-  height: 36px;
+  width: 44px;
+  height: 44px;
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: 50%;
   transition: background 0.2s;
+  touch-action: manipulation;
 }
 .btn-back:active { background: var(--surface-2); }
 .btn-back svg { width: 20px; height: 20px; }
@@ -161,13 +162,14 @@ html, body {
   border: none;
   color: var(--navy);
   cursor: pointer;
-  width: 36px;
-  height: 36px;
+  width: 44px;
+  height: 44px;
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: 50%;
   transition: background 0.2s;
+  touch-action: manipulation;
 }
 .btn-icon-gold:active { background: var(--surface-2); }
 .btn-icon-gold svg { width: 18px; height: 18px; }
@@ -177,13 +179,14 @@ html, body {
   border: none;
   color: var(--danger);
   cursor: pointer;
-  width: 36px;
-  height: 36px;
+  width: 44px;
+  height: 44px;
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: 50%;
   transition: background 0.2s;
+  touch-action: manipulation;
 }
 .btn-icon-danger:active { background: var(--danger-bg); }
 .btn-icon-danger svg { width: 18px; height: 18px; }
@@ -199,8 +202,10 @@ html, body {
   font-size: 15px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: transform 0.2s, background 0.2s;
   margin-top: 8px;
+  touch-action: manipulation;
+  min-height: 52px;
 }
 .btn-primary:active { transform: scale(0.98); background: var(--navy-light); }
 
@@ -247,11 +252,12 @@ html, body {
   border-radius: var(--radius);
   padding: 16px 16px 16px 20px;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: transform 0.2s, box-shadow 0.2s;
   position: relative;
   overflow: hidden;
   box-shadow: var(--shadow-sm);
   animation: card-in 0.35s cubic-bezier(0.4, 0, 0.2, 1) both;
+  touch-action: manipulation;
 }
 
 @keyframes card-in {
@@ -372,12 +378,13 @@ html, body {
   height: 1px;
   background: linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent);
   animation: scan 2s ease-in-out infinite;
-  top: 50%;
+  top: 20%;
+  will-change: transform, opacity;
 }
 
 @keyframes scan {
-  0%, 100% { opacity: 0.2; top: 20%; }
-  50% { opacity: 1; top: 80%; }
+  0%, 100% { opacity: 0.2; transform: translateY(0); }
+  50% { opacity: 1; transform: translateY(400%); }
 }
 
 .scan-actions {
@@ -623,8 +630,10 @@ html, body {
   flex-direction: column;
   align-items: center;
   gap: 8px;
-  transition: all 0.2s;
+  transition: transform 0.2s, box-shadow 0.2s, background 0.2s;
   box-shadow: var(--shadow-sm);
+  touch-action: manipulation;
+  min-height: 80px;
 }
 .action-btn:active { transform: scale(0.97); box-shadow: none; background: var(--surface-2); }
 .action-btn svg { width: 22px; height: 22px; color: var(--navy); }
