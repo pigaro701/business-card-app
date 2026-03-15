@@ -78,41 +78,23 @@ function hidePhotoPreview() {
   lastCapturedBlob = null;
 }
 
-// ── 사진 저장 (iOS 사진첩) ────────────────────────────────────────────────────
-async function savePhotoToGallery() {
+// ── 사진 저장 오버레이 열기/닫기 ─────────────────────────────────────────────
+function openPhotoSaveOverlay() {
   if (!lastCapturedBlob) { showToast('먼저 사진을 촬영해주세요'); return; }
+  const overlay = document.getElementById('photo-save-overlay');
+  const img     = document.getElementById('photo-save-img');
+  // 오버레이용 ObjectURL (별도 생성 — preview와 독립)
+  if (overlay._blobURL) URL.revokeObjectURL(overlay._blobURL);
+  overlay._blobURL = URL.createObjectURL(lastCapturedBlob);
+  img.src = overlay._blobURL;
+  overlay.style.display = 'flex';
+}
 
-  const filename = `명함_${new Date().toISOString().slice(0, 10)}.jpg`;
-
-  // 방법 1: Web Share API — iOS 15.4+ 지원
-  if (navigator.share && navigator.canShare) {
-    try {
-      const file = new File([lastCapturedBlob], filename, { type: 'image/jpeg' });
-      if (navigator.canShare({ files: [file] })) {
-        await navigator.share({ files: [file] });
-        return; // 성공 시 종료
-      }
-    } catch (e) {
-      if (e.name === 'AbortError') return; // 사용자가 취소
-      // 실패 시 방법 2로 계속
-    }
-  }
-
-  // 방법 2: 새 탭에서 이미지 열기 → iOS 모든 버전에서 작동
-  // (새 탭에서 이미지를 길게 누르면 "사진 저장" 메뉴 나타남)
-  const blobURL = URL.createObjectURL(lastCapturedBlob);
-  const newTab  = window.open(blobURL, '_blank');
-  if (newTab) {
-    showToast('새 탭 이미지를 길게 눌러 → "사진 저장" 탭 📷');
-    setTimeout(() => URL.revokeObjectURL(blobURL), 60000);
-    return;
-  }
-
-  // 방법 3: 다운로드 링크 (데스크탑 / 팝업 차단 환경)
-  const a = document.createElement('a');
-  a.href = blobURL; a.download = filename; a.click();
-  setTimeout(() => URL.revokeObjectURL(blobURL), 1000);
-  showToast('사진 다운로드 완료 ✓');
+function closePhotoSaveOverlay() {
+  const overlay = document.getElementById('photo-save-overlay');
+  overlay.style.display = 'none';
+  document.getElementById('photo-save-img').src = '';
+  if (overlay._blobURL) { URL.revokeObjectURL(overlay._blobURL); overlay._blobURL = null; }
 }
 
 // ── OCR 이미지 전처리 (흑백 + 대비 강화 + 업스케일) ─────────────────────────
@@ -692,8 +674,9 @@ document.addEventListener('DOMContentLoaded', () => {
     e.target.value = '';
   });
 
-  // 사진 저장 버튼
-  document.getElementById('btn-save-photo').addEventListener('click', savePhotoToGallery);
+  // 사진 저장 버튼 → 풀스크린 오버레이
+  document.getElementById('btn-save-photo').addEventListener('click', openPhotoSaveOverlay);
+  document.getElementById('photo-save-close').addEventListener('click', closePhotoSaveOverlay);
 
   // 명함 저장
   document.getElementById('card-form').addEventListener('submit', async e => {

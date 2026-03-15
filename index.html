@@ -317,6 +317,13 @@
     </button>
   </nav>
 
+  <!-- 사진 저장 오버레이 (iOS: 이미지 꾹 누르기 → 사진 저장) -->
+  <div id="photo-save-overlay" style="display:none">
+    <img id="photo-save-img" alt="명함 사진">
+    <p class="photo-save-hint">📷 이미지를 꾹 눌러주세요<br><span>→ "사진 저장" 선택</span></p>
+    <button id="photo-save-close" type="button">✕ 닫기</button>
+  </div>
+
   <!-- Toast -->
   <div class="toast" id="toast"></div>
 
