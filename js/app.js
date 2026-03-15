@@ -79,30 +79,40 @@ function hidePhotoPreview() {
 }
 
 // ── 사진 저장 (iOS 사진첩) ────────────────────────────────────────────────────
-// ※ Blob을 미리 저장해두어 Web Share API 호출 시 async fetch 없이 즉시 실행
 async function savePhotoToGallery() {
-  if (!lastCapturedBlob) { showToast('저장할 사진이 없습니다'); return; }
+  if (!lastCapturedBlob) { showToast('먼저 사진을 촬영해주세요'); return; }
 
   const filename = `명함_${new Date().toISOString().slice(0, 10)}.jpg`;
-  const file = new File([lastCapturedBlob], filename, { type: 'image/jpeg' });
 
-  try {
-    if (navigator.canShare && navigator.canShare({ files: [file] })) {
-      // iOS Safari: 공유 메뉴 → "이미지 저장" 선택
-      await navigator.share({ files: [file], title: '명함 사진' });
-    } else {
-      // Android / 데스크탑 폴백: 파일 다운로드
-      const url = URL.createObjectURL(lastCapturedBlob);
-      const a   = document.createElement('a');
-      a.href = url; a.download = filename; a.click();
-      URL.revokeObjectURL(url);
-      showToast('사진 다운로드 완료 ✓');
-    }
-  } catch (e) {
-    if (e.name !== 'AbortError') {
-      showToast('미리보기 이미지를 길게 눌러 저장하세요');
+  // 방법 1: Web Share API — iOS 15.4+ 지원
+  if (navigator.share && navigator.canShare) {
+    try {
+      const file = new File([lastCapturedBlob], filename, { type: 'image/jpeg' });
+      if (navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file] });
+        return; // 성공 시 종료
+      }
+    } catch (e) {
+      if (e.name === 'AbortError') return; // 사용자가 취소
+      // 실패 시 방법 2로 계속
     }
   }
+
+  // 방법 2: 새 탭에서 이미지 열기 → iOS 모든 버전에서 작동
+  // (새 탭에서 이미지를 길게 누르면 "사진 저장" 메뉴 나타남)
+  const blobURL = URL.createObjectURL(lastCapturedBlob);
+  const newTab  = window.open(blobURL, '_blank');
+  if (newTab) {
+    showToast('새 탭 이미지를 길게 눌러 → "사진 저장" 탭 📷');
+    setTimeout(() => URL.revokeObjectURL(blobURL), 60000);
+    return;
+  }
+
+  // 방법 3: 다운로드 링크 (데스크탑 / 팝업 차단 환경)
+  const a = document.createElement('a');
+  a.href = blobURL; a.download = filename; a.click();
+  setTimeout(() => URL.revokeObjectURL(blobURL), 1000);
+  showToast('사진 다운로드 완료 ✓');
 }
 
 // ── OCR ──────────────────────────────────────────────────────────────────────
@@ -546,25 +556,51 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // 촬영 — canvas.toBlob()으로 Blob 직접 획득
+  // 촬영
   document.getElementById('btn-capture').addEventListener('click', () => {
     const video  = document.getElementById('camera-video');
     const canvas = document.getElementById('camera-canvas');
+
+    // 비디오 스트림 크기 확인
+    if (!video.videoWidth || !video.videoHeight) {
+      showToast('카메라 준비 중입니다. 잠시 후 다시 눌러주세요');
+      return;
+    }
+
     canvas.width  = video.videoWidth;
     canvas.height = video.videoHeight;
     canvas.getContext('2d').drawImage(video, 0, 0);
     stopCamera();
 
-    canvas.toBlob(async blob => {
-      lastCapturedBlob = blob;
-      showPhotoPreview(blob);                        // 미리보기 표시
-      const ocrURL = URL.createObjectURL(blob);
-      await runOCR(ocrURL);
-      URL.revokeObjectURL(ocrURL);                   // OCR 후 임시 URL 해제
-    }, 'image/jpeg', 0.92);
+    // toBlob 시도, 실패 시 dataURL로 폴백
+    try {
+      canvas.toBlob(blob => {
+        if (blob) {
+          lastCapturedBlob = blob;
+          showPhotoPreview(blob);
+          const ocrURL = URL.createObjectURL(blob);
+          runOCR(ocrURL).finally(() => URL.revokeObjectURL(ocrURL));
+        } else {
+          // blob이 null인 경우 dataURL 폴백
+          useDateURLFallback(canvas);
+        }
+      }, 'image/jpeg', 0.92);
+    } catch {
+      useDateURLFallback(canvas);
+    }
   });
 
-  // 갤러리 — File 자체가 Blob이므로 바로 저장
+  // dataURL 폴백 (toBlob 실패 시)
+  function useDateURLFallback(canvas) {
+    const dataURL = canvas.toDataURL('image/jpeg', 0.92);
+    fetch(dataURL).then(r => r.blob()).then(blob => {
+      lastCapturedBlob = blob;
+      showPhotoPreview(blob);
+      runOCR(dataURL);
+    });
+  }
+
+  // 갤러리
   document.getElementById('btn-gallery').addEventListener('click', () => {
     document.getElementById('file-input').click();
   });
@@ -572,8 +608,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const file = e.target.files[0];
     if (!file) return;
     stopCamera();
-    lastCapturedBlob = file;                         // File은 Blob 서브클래스
-    showPhotoPreview(file);                          // 미리보기 표시
+    lastCapturedBlob = file;
+    showPhotoPreview(file);
     const ocrURL = URL.createObjectURL(file);
     await runOCR(ocrURL);
     URL.revokeObjectURL(ocrURL);

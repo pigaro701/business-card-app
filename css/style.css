@@ -478,6 +478,14 @@ html, body {
 }
 .btn-save-photo:active { transform: scale(0.95); background: rgba(0,0,0,0.85); }
 
+.photo-hint {
+  text-align: center;
+  font-size: 12px;
+  color: var(--text-muted);
+  padding: 8px 0 4px;
+  font-family: var(--font-body);
+}
+
 /* ── Form ── */
 .form-panel {
   padding: 8px 16px 120px;
