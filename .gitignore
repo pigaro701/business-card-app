@@ -1,0 +1,11 @@
+# 환경변수 (API Key 등 민감 정보)
+.env
+*.env
+
+# OS 파일
+.DS_Store
+Thumbs.db
+
+# 에디터
+.vscode/
+.idea/
