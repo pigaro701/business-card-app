@@ -115,13 +115,49 @@ async function savePhotoToGallery() {
   showToast('사진 다운로드 완료 ✓');
 }
 
+// ── OCR 이미지 전처리 (흑백 + 대비 강화 + 업스케일) ─────────────────────────
+function preprocessForOCR(src) {
+  return new Promise(resolve => {
+    const img = new Image();
+    img.onload = () => {
+      const MIN_W = 1600;
+      const scale = Math.max(1, MIN_W / (img.naturalWidth || img.width));
+      const w = Math.round((img.naturalWidth  || img.width)  * scale);
+      const h = Math.round((img.naturalHeight || img.height) * scale);
+
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, w, h);
+
+      // 픽셀 단위 흑백 변환 + 대비 강화
+      const id = ctx.getImageData(0, 0, w, h);
+      const d  = id.data;
+      for (let i = 0; i < d.length; i += 4) {
+        const gray = d[i] * 0.299 + d[i+1] * 0.587 + d[i+2] * 0.114;
+        const c    = Math.min(255, Math.max(0, (gray - 128) * 1.4 + 140));
+        d[i] = d[i+1] = d[i+2] = c;
+      }
+      ctx.putImageData(id, 0, 0);
+      resolve(canvas.toDataURL('image/png')); // PNG = 무손실, OCR 정확도 높음
+    };
+    img.onerror = () => resolve(src); // 실패 시 원본 사용
+    img.src = src;
+  });
+}
+
 // ── OCR ──────────────────────────────────────────────────────────────────────
 async function runOCR(imageSource) {
   setOCRStatus('명함 인식 준비 중...');
   showLoading('OCR 준비 중...');
   try {
     await loadTesseract();
-    const { data: { text } } = await Tesseract.recognize(imageSource, 'kor+eng', {
+
+    // 이미지 전처리 후 인식
+    setOCRStatus('이미지 보정 중...');
+    const processed = await preprocessForOCR(imageSource);
+
+    const { data: { text } } = await Tesseract.recognize(processed, 'kor+eng', {
       logger: m => {
         if (m.status === 'recognizing text') {
           setOCRStatus(`인식 중... ${Math.round(m.progress * 100)}%`);
@@ -129,8 +165,7 @@ async function runOCR(imageSource) {
       }
     });
     parseOCRText(text);
-    setOCRStatus('인식 완료 ✓  아래 내용을 확인·수정 후 저장해주세요');
-    // OCR 완료 후 사진 미리보기가 있으면 미리보기로, 없으면 폼으로 스크롤
+    setOCRStatus('인식 완료 ✓  내용을 확인하고 수정 후 저장해주세요');
     setTimeout(() => {
       const preview = document.getElementById('photo-preview');
       const target  = (preview && preview.style.display !== 'none')
@@ -146,27 +181,65 @@ async function runOCR(imageSource) {
 }
 
 function parseOCRText(raw) {
-  const lines = raw.split('\n').map(l => l.trim()).filter(Boolean);
-  const phoneRe = /[\d]{2,4}[-.\s]?\d{3,4}[-.\s]?\d{4}/;
+  const lines = raw.split('\n').map(l => l.trim()).filter(l => l.length > 1);
+
+  // ── 정규식 ──
+  const phoneRe = /(?:010|011|016|017|019|02|031|032|033|041|042|043|044|051|052|053|054|055|061|062|063|064|070)[-.\s]?\d{3,4}[-.\s]?\d{4}/;
   const emailRe = /[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/;
 
-  let phone = '', email = '';
+  // ── 직함 키워드 ──
+  const positionKw = ['대표이사','대표','부회장','회장','전무','상무','이사','부장','차장','과장','팀장','대리','사원','주임','선임','책임','수석','원장','소장','교수','박사','연구원','컨설턴트','매니저','Director','Manager','CEO','CTO','CFO','COO','VP','Engineer','Researcher','Partner','Consultant'];
+
+  // ── 회사 키워드 ──
+  const companyKw = ['(주)','㈜','주식회사','유한회사','합자회사','Inc.','Inc','Co.,','Ltd.','Ltd','Corp.','Corp','그룹','Group','사업부','연구소','대학교','대학','병원','클리닉','센터','아카데미','협회','재단'];
+
+  let phone = '', email = '', name = '', company = '', position = '';
   const rest = [];
 
   for (const line of lines) {
-    const emailMatch = line.match(emailRe);
-    const phoneMatch = line.match(phoneRe);
-    if (!email && emailMatch) { email = emailMatch[0]; continue; }
-    if (!phone && phoneMatch) { phone = phoneMatch[0]; continue; }
+    // 이메일
+    const em = line.match(emailRe);
+    if (!email && em) { email = em[0]; continue; }
+
+    // 전화번호 (T., F., M. 등 접두사 제거)
+    const clean = line.replace(/^[TtFfMm][\.\:\s]+/, '');
+    const ph = clean.match(phoneRe);
+    if (!phone && ph) { phone = ph[0]; continue; }
+
+    // 직함
+    if (!position && positionKw.some(k => line.includes(k))) {
+      position = line; continue;
+    }
+
+    // 회사명
+    if (!company && companyKw.some(k => line.includes(k))) {
+      company = line; continue;
+    }
+
     rest.push(line);
   }
 
-  const short = rest.filter(l => l.length < 20);
-  setFieldIfEmpty('field-name', short[0] || '');
-  setFieldIfEmpty('field-company', short[1] || '');
-  setFieldIfEmpty('field-position', short[2] || '');
-  setFieldIfEmpty('field-phone', phone);
-  setFieldIfEmpty('field-email', email);
+  // ── 이름 추출 ──
+  // 한글 이름: 2~4자 한글, 영문 이름: 영어 단어 2~3개
+  if (!name) {
+    const found = rest.find(l =>
+      /^[가-힣]{2,4}$/.test(l) ||
+      /^[A-Z][a-z]+ [A-Z][a-z]+( [A-Z][a-z]+)?$/.test(l)
+    );
+    if (found) { name = found; rest.splice(rest.indexOf(found), 1); }
+  }
+
+  // 남은 짧은 줄 중 회사·직함 채우기
+  const shorts = rest.filter(l => l.length < 30);
+  if (!name)     name     = shorts[0] || '';
+  if (!company)  company  = shorts[1] || rest[0] || '';
+  if (!position) position = shorts[2] || '';
+
+  setFieldIfEmpty('field-name',     name);
+  setFieldIfEmpty('field-company',  company);
+  setFieldIfEmpty('field-position', position);
+  setFieldIfEmpty('field-phone',    phone);
+  setFieldIfEmpty('field-email',    email);
 }
 
 function setFieldIfEmpty(id, value) {
