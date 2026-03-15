@@ -147,6 +147,28 @@ html, body {
 .btn-back:active { background: var(--surface); }
 .btn-back svg { width: 20px; height: 20px; }
 
+.header-actions {
+  display: flex;
+  gap: 4px;
+  margin-left: auto;
+}
+
+.btn-icon-gold {
+  background: none;
+  border: none;
+  color: var(--gold);
+  cursor: pointer;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: background 0.2s;
+}
+.btn-icon-gold:active { background: var(--surface); }
+.btn-icon-gold svg { width: 18px; height: 18px; }
+
 .btn-icon-danger {
   background: none;
   border: none;
@@ -157,7 +179,6 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-left: auto;
   border-radius: 50%;
 }
 .btn-icon-danger svg { width: 18px; height: 18px; }

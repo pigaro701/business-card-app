@@ -215,6 +215,39 @@ function showDetail(card) {
   showScreen('detail');
 }
 
+// ── 명함 수정 ─────────────────────────────────────────────────────────────────
+function showEditScreen(card) {
+  const fields = {
+    'edit-name':         card.name,
+    'edit-company':      card.company,
+    'edit-position':     card.position,
+    'edit-phone':        card.phone,
+    'edit-email':        card.email,
+    'edit-address':      card.address,
+    'edit-met-location': card.met_location,
+    'edit-met-reason':   card.met_reason,
+  };
+  for (const [id, val] of Object.entries(fields)) {
+    const el = document.getElementById(id);
+    if (el) el.value = val || '';
+  }
+  if (card.met_datetime) {
+    const dt = new Date(card.met_datetime);
+    dt.setMinutes(dt.getMinutes() - dt.getTimezoneOffset());
+    document.getElementById('edit-met-datetime').value = dt.toISOString().slice(0, 16);
+  }
+  showScreen('edit');
+}
+
+async function updateCard(id, data) {
+  showLoading('수정 중...');
+  const { error } = await db.from('business_cards').update(data).eq('id', id);
+  hideLoading();
+  if (error) { showToast('수정 실패: ' + error.message); return false; }
+  showToast('수정되었습니다');
+  return true;
+}
+
 // ── vCard ─────────────────────────────────────────────────────────────────────
 function downloadVCard(card) {
   const vcf = [
@@ -381,6 +414,34 @@ document.addEventListener('DOMContentLoaded', () => {
     showScreen('home');
   });
   document.getElementById('btn-back-detail').addEventListener('click', () => showScreen('home'));
+  document.getElementById('btn-back-edit').addEventListener('click', () => showScreen('detail'));
+
+  // 수정 버튼
+  document.getElementById('btn-edit').addEventListener('click', () => {
+    if (currentCard) showEditScreen(currentCard);
+  });
+
+  // 수정 폼 저장
+  document.getElementById('edit-form').addEventListener('submit', async e => {
+    e.preventDefault();
+    const data = {
+      name:         document.getElementById('edit-name').value.trim(),
+      company:      document.getElementById('edit-company').value.trim(),
+      position:     document.getElementById('edit-position').value.trim(),
+      phone:        document.getElementById('edit-phone').value.trim(),
+      email:        document.getElementById('edit-email').value.trim(),
+      address:      document.getElementById('edit-address').value.trim(),
+      met_location: document.getElementById('edit-met-location').value.trim(),
+      met_datetime: document.getElementById('edit-met-datetime').value || null,
+      met_reason:   document.getElementById('edit-met-reason').value.trim(),
+    };
+    const ok = await updateCard(currentCard.id, data);
+    if (ok) {
+      currentCard = { ...currentCard, ...data };
+      showDetail(currentCard);
+      loadCards();
+    }
+  });
   document.getElementById('btn-back-profile').addEventListener('click', () => showScreen('home'));
 
   // 촬영

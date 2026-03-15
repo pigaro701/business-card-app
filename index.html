@@ -142,11 +142,19 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
         </button>
         <h2 class="screen-title">명함 상세</h2>
-        <button class="btn-icon-danger" id="btn-delete">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-            <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/>
-          </svg>
-        </button>
+        <div class="header-actions">
+          <button class="btn-icon-gold" id="btn-edit">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+            </svg>
+          </button>
+          <button class="btn-icon-danger" id="btn-delete">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/>
+            </svg>
+          </button>
+        </div>
       </header>
 
       <div class="detail-card" id="detail-card"></div>
@@ -167,6 +175,63 @@
           </svg>
           인사 이메일
         </button>
+      </div>
+    </section>
+
+    <!-- ── Screen: 명함 수정 ── -->
+    <section class="screen" id="screen-edit">
+      <header class="screen-header">
+        <button class="btn-back" id="btn-back-edit">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+        </button>
+        <h2 class="screen-title">명함 수정</h2>
+      </header>
+      <div class="form-panel">
+        <form id="edit-form">
+          <div class="form-section">
+            <h3 class="form-section-title">인물 정보</h3>
+            <div class="field-group">
+              <input type="text" id="edit-name" placeholder="이름" class="field-input">
+              <label class="field-label" for="edit-name">이름</label>
+            </div>
+            <div class="field-group">
+              <input type="text" id="edit-company" placeholder="회사" class="field-input">
+              <label class="field-label" for="edit-company">회사</label>
+            </div>
+            <div class="field-group">
+              <input type="text" id="edit-position" placeholder="직책" class="field-input">
+              <label class="field-label" for="edit-position">직책</label>
+            </div>
+            <div class="field-group">
+              <input type="tel" id="edit-phone" placeholder="전화번호" class="field-input">
+              <label class="field-label" for="edit-phone">전화번호</label>
+            </div>
+            <div class="field-group">
+              <input type="email" id="edit-email" placeholder="이메일" class="field-input">
+              <label class="field-label" for="edit-email">이메일</label>
+            </div>
+            <div class="field-group">
+              <input type="text" id="edit-address" placeholder="주소" class="field-input">
+              <label class="field-label" for="edit-address">주소</label>
+            </div>
+          </div>
+          <div class="form-section">
+            <h3 class="form-section-title">만남 정보</h3>
+            <div class="field-group">
+              <input type="text" id="edit-met-location" placeholder="만난 장소" class="field-input">
+              <label class="field-label" for="edit-met-location">만난 장소</label>
+            </div>
+            <div class="field-group">
+              <input type="datetime-local" id="edit-met-datetime" class="field-input">
+              <label class="field-label always-top" for="edit-met-datetime">만난 일시</label>
+            </div>
+            <div class="field-group">
+              <textarea id="edit-met-reason" placeholder="만난 이유 / 메모" class="field-input field-textarea"></textarea>
+              <label class="field-label" for="edit-met-reason">메모</label>
+            </div>
+          </div>
+          <button type="submit" class="btn-primary">수정 완료</button>
+        </form>
       </div>
     </section>
 
