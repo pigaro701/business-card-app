@@ -73,6 +73,8 @@ html, body {
   overflow-x: hidden;
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
+  /* FAB보다 낮게 */
+  z-index: 10;
 }
 
 .screen.active {
@@ -207,8 +209,8 @@ html, body {
   position: fixed;
   bottom: calc(var(--nav-height) + var(--safe-bottom) + 20px);
   right: 20px;
-  width: 56px;
-  height: 56px;
+  width: 60px;
+  height: 60px;
   border-radius: 50%;
   background: var(--navy);
   border: none;
@@ -218,10 +220,17 @@ html, body {
   justify-content: center;
   box-shadow: 0 4px 16px rgba(28, 58, 94, 0.35);
   transition: all 0.25s;
-  z-index: 50;
+  /* iOS: z-index를 bottom-nav(100)보다 높게 */
+  z-index: 150;
+  /* iOS: 터치 이벤트 명시적 활성화 */
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: rgba(0,0,0,0);
+  /* iOS: transform 없이 고정 */
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
 }
 .fab svg { width: 24px; height: 24px; color: #FFFFFF; }
-.fab:active { transform: scale(0.92); }
+.fab:active { transform: translateZ(0) scale(0.92); }
 
 /* ── Card Grid ── */
 .card-grid {
