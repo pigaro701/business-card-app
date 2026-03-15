@@ -5,6 +5,17 @@
 # 앱 설정 (API Key 포함)
 js/config.js
 
+# Claude 내부 설정
+.claude/
+
+# 비밀번호/메모 텍스트 파일
+*.txt
+
+# Word 문서 등 개인 파일
+*.docx
+*.doc
+*.xlsx
+
 # OS 파일
 .DS_Store
 Thumbs.db
