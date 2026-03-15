@@ -47,11 +47,19 @@ html, body {
 }
 
 /* ── App Shell ── */
+body {
+  /* iOS: overflow hidden을 body에 적용 */
+  overflow: hidden;
+  position: fixed;
+  width: 100%;
+  height: 100%;
+}
+
 #app {
   height: 100dvh;
   height: -webkit-fill-available;
   position: relative;
-  overflow: hidden;
+  /* overflow: hidden 제거 — iOS fixed 버그 원인 */
   display: flex;
   flex-direction: column;
   background: var(--bg);

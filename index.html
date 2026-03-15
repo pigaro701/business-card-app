@@ -292,24 +292,32 @@
       </form>
     </section>
 
-    <!-- ── Bottom Navigation ── -->
-    <nav class="bottom-nav">
-      <button class="nav-item active" data-screen="home">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
-          <polyline points="9 22 9 12 15 12 15 22"/>
-        </svg>
-        <span>명함첩</span>
-      </button>
-      <button class="nav-item" data-screen="profile">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-          <circle cx="12" cy="7" r="4"/>
-        </svg>
-        <span>내 프로필</span>
-      </button>
-    </nav>
   </div>
+
+  <!-- FAB — #app 밖에 위치 (iOS fixed 버그 방지) -->
+  <button class="fab" id="btn-add-card" aria-label="명함 추가">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+      <path d="M12 5v14M5 12h14"/>
+    </svg>
+  </button>
+
+  <!-- Bottom Navigation — #app 밖에 위치 -->
+  <nav class="bottom-nav">
+    <button class="nav-item active" data-screen="home">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+        <polyline points="9 22 9 12 15 12 15 22"/>
+      </svg>
+      <span>명함첩</span>
+    </button>
+    <button class="nav-item" data-screen="profile">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <path d="M20 21v-2a4 4 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+        <circle cx="12" cy="7" r="4"/>
+      </svg>
+      <span>내 프로필</span>
+    </button>
+  </nav>
 
   <!-- Toast -->
   <div class="toast" id="toast"></div>
