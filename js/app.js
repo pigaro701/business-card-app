@@ -130,10 +130,13 @@ async function runOCR(imageSource) {
     });
     parseOCRText(text);
     setOCRStatus('인식 완료 ✓  아래 내용을 확인·수정 후 저장해주세요');
-    // OCR 완료 후 폼으로 스크롤
+    // OCR 완료 후 사진 미리보기가 있으면 미리보기로, 없으면 폼으로 스크롤
     setTimeout(() => {
-      document.getElementById('card-form')
-        .scrollIntoView({ behavior: 'smooth', block: 'start' });
+      const preview = document.getElementById('photo-preview');
+      const target  = (preview && preview.style.display !== 'none')
+        ? preview
+        : document.getElementById('card-form');
+      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }, 300);
   } catch {
     setOCRStatus('인식 실패 — 조명을 밝게 하거나 직접 입력해주세요');
